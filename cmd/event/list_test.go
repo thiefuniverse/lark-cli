@@ -24,6 +24,7 @@ func TestRunList_TextOutput(t *testing.T) {
 	out := stdout.String()
 	for _, want := range []string{
 		"KEY", "AUTH", "PARAMS", "DESCRIPTION",
+		"card.action.trigger",
 		"im.message.receive_v1",
 		"im.message.message_read_v1",
 	} {
@@ -54,5 +55,18 @@ func TestRunList_JSONOutput(t *testing.T) {
 				t.Errorf("row missing %q: %+v", field, row)
 			}
 		}
+	}
+	foundCardAction := false
+	for _, row := range rows {
+		if row["key"] == "card.action.trigger" {
+			foundCardAction = true
+			if row["event_type"] != "card.action.trigger" {
+				t.Errorf("card.action.trigger event_type = %v", row["event_type"])
+			}
+			break
+		}
+	}
+	if !foundCardAction {
+		t.Fatalf("JSON output missing card.action.trigger row: %+v", rows)
 	}
 }

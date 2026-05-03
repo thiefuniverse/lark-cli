@@ -95,6 +95,42 @@ func TestRunSchema_JSONOutput(t *testing.T) {
 	}
 }
 
+func TestRunSchema_CardActionTrigger_JSONOutput(t *testing.T) {
+	f, stdout, _, _ := cmdutil.TestFactory(t, &core.CliConfig{AppID: "test"})
+
+	if err := runSchema(f, "card.action.trigger", true); err != nil {
+		t.Fatalf("runSchema card.action.trigger json: %v", err)
+	}
+
+	var payload map[string]interface{}
+	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+		t.Fatalf("output is not valid JSON: %v\n%s", err, stdout.String())
+	}
+	if payload["key"] != "card.action.trigger" {
+		t.Errorf("key = %v, want card.action.trigger", payload["key"])
+	}
+	if payload["event_type"] != "card.action.trigger" {
+		t.Errorf("event_type = %v, want card.action.trigger", payload["event_type"])
+	}
+	schema, ok := payload["resolved_output_schema"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("resolved_output_schema has unexpected shape: %+v", payload["resolved_output_schema"])
+	}
+	encoded, err := json.Marshal(schema)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		`"action"`,
+		`"open_message_id"`,
+		`"open_chat_id"`,
+	} {
+		if !strings.Contains(string(encoded), want) {
+			t.Errorf("card schema missing %q; got:\n%s", want, encoded)
+		}
+	}
+}
+
 func TestResolveSchemaJSON_CustomWithOverlay(t *testing.T) {
 	const syntheticKey = "t.custom.overlay"
 	t.Cleanup(func() { eventlib.UnregisterKeyForTest(syntheticKey) })
